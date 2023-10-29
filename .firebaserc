@@ -1,0 +1,14 @@
+{
+  "targets": {
+    "danotes-757e3": {
+      "hosting": {
+        "DAKeep": [
+          "danotes-757e3"
+        ]
+      }
+    }
+  },
+  "projects": {
+    "default": "danotes-757e3"
+  }
+}
