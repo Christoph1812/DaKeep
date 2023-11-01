@@ -1,5 +1,5 @@
 import { Injectable, OnDestroy, inject } from '@angular/core';
-import { Firestore, addDoc, collection, doc, onSnapshot, updateDoc } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, deleteDoc, doc, onSnapshot, updateDoc, orderBy, limit, where, query } from '@angular/fire/firestore';
 import { Note } from '../interfaces/note.interface';
 import { Observable } from 'rxjs';
 
@@ -10,17 +10,27 @@ export class NoteListService implements OnDestroy {
 
   trashNotes: Note[] = [];
   normalNotes: Note[] = [];
+  markedNotes: Note[] = [];
 
   unsubTrash;
   unsubNotes;
-
+  unsubMarkedNotes;
 
   firestore: Firestore = inject(Firestore);
 
   constructor() {
     this.unsubNotes = this.subNotesList();
     this.unsubTrash = this.subTrashList();
+    this.unsubMarkedNotes = this.subMarkedNotesList();
   }
+
+
+  async deleteNote(colId: "notes" | "trash", docId: string) {
+    await deleteDoc(this.getSingleDocRef(colId, docId)).catch(
+      (err) => { console.log(err) }
+    )
+  }
+
 
   async updateNote(note: Note) {
     if (note.id) {
@@ -47,7 +57,7 @@ export class NoteListService implements OnDestroy {
 
   getColIdFromNote(note: Note) {
     if (note.type == 'note') {
-      return 'note'
+      return 'notes'
     } else {
       return 'trash'
     }
@@ -55,17 +65,26 @@ export class NoteListService implements OnDestroy {
 
 
 
-  async addNote(item: Note) {
-    await addDoc(this.getNotesRef(), item).catch(
-      (err) => { console.log(err) }
-    ).then(
-      (docRef) => { console.log("Document written with ID:", docRef) }
-    )
+  async addNote(item: Note, colId: "notes" | "trash") {
+    if (colId == "notes") {
+      await addDoc(this.getNotesRef(), item).catch(
+        (err) => { console.log(err) }
+      ).then(
+        (docRef) => { console.log("Document written with ID:", docRef) }
+      )
+    } else {
+      await addDoc(this.getTrashRef(), item).catch(
+        (err) => { console.log(err) }
+      ).then(
+        (docRef) => { console.log("Document written with ID:", docRef) }
+      )
+    }
   }
 
   ngOnDestroy() {
     this.unsubTrash();
     this.unsubNotes();
+    this.unsubMarkedNotes();
   }
 
 
@@ -80,10 +99,23 @@ export class NoteListService implements OnDestroy {
 
 
   subNotesList() {
-    return onSnapshot(this.getNotesRef(), (list) => {
+    const q = query(this.getNotesRef(), limit(4))
+    return onSnapshot(q, (list) => {
       this.normalNotes = [];
       list.forEach(element => {
         this.normalNotes.push(this.setNoteObject(element.data(), element.id));
+      });
+
+    });
+  }
+
+  subMarkedNotesList() {
+    const q = query(this.getNotesRef(), where("marked", "==", true), limit(4))
+    return onSnapshot(q, (list) => {
+      this.markedNotes = [];
+      list.forEach(element => {
+        this.markedNotes.push(this.setNoteObject(element.data(), element.id));
+        console.log("okay")
       });
 
     });
