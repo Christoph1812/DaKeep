@@ -17,7 +17,7 @@ export class NoteComponent {
 
   changeMarkedStatus() {
     this.note.marked = !this.note.marked;
-    console.log(this.note);
+    this.saveNote();
   }
 
 
